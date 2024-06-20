@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 원진호_0403_mapper추가. -->
+<!-- dao의 인터페이스 주소 -->
+<mapper namespace="com.tech.miaa.dao.MatchingAlarmDao">
+	<select id="matching_alarm_list"
+		resultType="com.tech.miaa.dto.ItemDto">
+		SELECT *
+		FROM ITEM
+		WHERE USER_ID =#{param1}
+		ORDER BY TOTAL_ID
+		DESC
+	</select>
+	<select id="matching_alarm_anilist"
+		resultType="com.tech.miaa.dto.AnimalDto">
+		SELECT *
+		FROM ANIMAL
+		WHERE USER_ID =#{param1}
+		ORDER BY
+		TOTAL_ID
+		DESC
+	</select>
+	<delete id="mypage_alarm_delete">
+		UPDATE MATCHINGALARM
+		SET ALARM_CHECK = 'N'
+		WHERE PRIMEID=#{param1} AND TOTAL_ID=#{param2} AND USER_ID=#{param3}
+	</delete>
+	<insert id="total_item_write">
+		MERGE INTO TOTALITEM T
+		USING DUAL
+		ON (T.ATCID =
+		#{param1})
+		WHEN NOT MATCHED THEN
+		INSERT (ATCID, CLRNM, DEPPLACE,
+		FDFILEPATHIMG, FDPRDTNM, FDSBJT, FDSN,
+		FDYMD, PRDTCLNM, RNUM, ADDR)
+		VALUES (#{param1}, #{param2}, #{param3}, #{param4}, #{param5},
+		#{param6}, #{param7}, #{param8}, #{param9}, #{param10}, #{param11})
+	</insert>
+	<insert id="total_animal_write">
+		MERGE INTO TOTALANIMAL T
+		USING DUAL
+		ON (T.DESERTIONNO =
+		#{param1})
+		WHEN NOT MATCHED THEN
+		INSERT (DESERTIONNO, FILENAME,
+		HAPPENDT, HAPPENPLACE, KINDCD, COLORCD, AGE,
+		WEIGHT,
+		NOTICENO,
+		NOTICESDT, NOTICEEDT, POPFILE, PROCESSSTATE, SEXCD, NEUTERYN,
+		SPECIALMARK, CARENM, CARETEL, CAREADDR, ORGNM, CHARGENM, OFFICETEL,
+		NOTICECOMMENT)
+		VALUES (#{param1}, #{param2}, #{param3}, #{param4},
+		#{param5},
+		#{param6}, #{param7}, #{param8}, #{param9}, #{param10},
+		#{param11},
+		#{param12}, #{param13}, #{param14}, #{param15}, #{param16},
+		#{param17},
+		#{param18}, #{param19}, #{param20}, #{param21}, #{param22},
+		#{param23})
+	</insert>
+
+	<insert id="alert_item_write">INSERT INTO ALERT_ITEM
+		VALUES(#{param1},#{param2},#{param3},#{param4},#{param5},
+		#{param6},#{param7},#{param8},#{param9},#{param10},#{param11},
+		#{param12}, #{param13})
+	</insert>
+	<insert id="alert_item_write2">MERGE INTO ALERT_ITEM
+		USING DUAL ON (ATCID =
+		#{param3})
+		WHEN NOT MATCHED THEN INSERT (TOTAL_ID, USER_ID, ATCID,
+		FDSBJT, FDSN,
+		PRDTCLNM,FDPRDTNM,FDYMD,DEPPLACE,RNUM,CLRNM,FDFILEPATHIMG,ADDR)
+		VALUES
+		(#{param1},#{param2},#{param3},#{param4},#{param5},
+		#{param6},#{param7},#{param8},#{param9},#{param10},#{param11},
+		#{param12}, #{param13})
+	</insert>
+	<insert id="alert_animal_write">INSERT INTO ALERT_ANIMAL
+		VALUES(#{param1},#{param2},#{param3},#{param4},#{param5},
+		#{param6},#{param7},#{param8},#{param9},#{param10},#{param11},
+		#{param12}, #{param13},
+		#{param14},#{param15},#{param16},#{param17},#{param18},#{param19},#{param20},#{param21},
+		#{param22},#{param23},#{param24},#{param25})
+	</insert>
+	<insert id="alert_animal_write2">MERGE INTO ALERT_ANIMAL
+		USING DUAL ON (DESERTIONNO =
+		#{param3})
+		WHEN NOT MATCHED THEN INSERT (TOTAL_ID,
+		USER_ID,DESERTIONNO,FILENAME,HAPPENDT,
+		HAPPENPLACE,KINDCD,COLORCD,AGE,WEIGHT,NOTICENO,NOTICESDT,NOTICEEDT,POPFILE,PROCESSSTATE,
+		SEXCD,NEUTERYN,SPECIALMARK,CARENM,CARETEL,CAREADDR,ORGNM,CHARGENM,OFFICETEL,NOTICECOMMENT)
+		VALUES(#{param1},#{param2},#{param3},#{param4},#{param5},
+		#{param6},#{param7},#{param8},#{param9},#{param10},#{param11},
+		#{param12}, #{param13},
+		#{param14},#{param15},#{param16},#{param17},#{param18},#{param19},#{param20},#{param21},
+		#{param22},#{param23},#{param24},#{param25})
+	</insert>
+	<select id="alert_item_list"
+		resultType="com.tech.miaa.dto.matchingAlarmDto">
+		SELECT *
+		FROM MATCHINGALARM
+		WHERE USER_ID=#{param1} AND ALARM_CHECK = 'Y'
+		ORDER BY
+		TOTAL_ID DESC
+	</select>
+
+	<select id="getlastcheck"
+		resultType="com.tech.miaa.dto.LastDataCheckDto">
+		SELECT * FROM LAST_CHK WHERE TYPE = #{param1}
+	</select>
+
+
+	<!-- primeID 업데이트 -->
+	<update id="updatePrimeID">
+		UPDATE LAST_CHK SET PRIMEID = #{param1} WHERE TYPE =
+		#{param2}
+	</update>
+
+	<!-- status 업데이트 -->
+	<update id="updateStatus">
+		UPDATE LAST_CHK SET STATUS = #{param1} WHERE TYPE =
+		#{param2}
+	</update>
+
+	<insert id="set_matching_alarm_list">
+    <![CDATA[
+    MERGE INTO MATCHINGALARM MA
+    USING (SELECT #{param1} AS USER_ID, #{param2} AS TOTAL_ID, ATCID AS PRIMEID, 'ATCID' AS TYPE, 'Y' AS ALARM_CHECK
+           FROM TOTALITEM 
+           WHERE PRDTCLNM LIKE '%' || #{param4} || '%' 
+           AND TO_DATE(FDYMD, 'YYYY-MM-DD') >= TO_DATE(#{param3}, 'YYYY-MM-DD')) SOURCE
+    ON (MA.USER_ID = SOURCE.USER_ID AND MA.TOTAL_ID = SOURCE.TOTAL_ID) 
+    WHEN NOT MATCHED THEN
+        INSERT (TOTAL_ID, USER_ID, PRIMEID, TYPE, ALARM_CHECK)
+        VALUES (SOURCE.TOTAL_ID, SOURCE.USER_ID, SOURCE.PRIMEID, SOURCE.TYPE, SOURCE.ALARM_CHECK)
+    ]]>
+	</insert>
+
+	<insert id="set_matching_alarm_anilist">
+        <![CDATA[
+    MERGE INTO MATCHINGALARM MA
+    USING (
+        SELECT 
+            #{param1} AS USER_ID,
+            #{param2} AS TOTAL_ID,
+            ITEM.DESERTIONNO AS PRIMEID,
+            'DESERTIONNO' AS TYPE,
+            'Y' AS ALARM_CHECK 
+            FROM TOTALANIMAL ITEM 
+        WHERE 
+            ITEM.KINDCD LIKE '%' || #{param4} || '%' AND TO_DATE(ITEM.HAPPENDT, 'YYYY-MM-DD') >= TO_DATE(#{param3}, 'YYYY-MM-DD')
+    ) SOURCE
+    ON (MA.USER_ID = SOURCE.USER_ID AND MA.TOTAL_ID = SOURCE.TOTAL_ID AND MA.PRIMEID = SOURCE.PRIMEID)
+    WHEN NOT MATCHED THEN 
+    INSERT (USER_ID, TOTAL_ID, PRIMEID, TYPE, ALARM_CHECK)
+        VALUES (SOURCE.USER_ID, SOURCE.TOTAL_ID, SOURCE.PRIMEID, SOURCE.TYPE, SOURCE.ALARM_CHECK)
+    ]]>
+	</insert>
+
+	<select id="matching_DB_items"
+		resultType="com.tech.miaa.dto.FounditemDto">
+		SELECT
+		ATCID,FDSBJT,FDSN,PRDTCLNM,FDPRDTNM,FDYMD,DEPPLACE,RNUM,CLRNM,FDFILEPATHIMG,
+		ADDR FROM (SELECT * FROM MATCHINGALARM WHERE TOTAL_ID = #{param1} AND ALARM_CHECK = 'Y')
+		INNER JOIN TOTALITEM W ON PRIMEID = ATCID
+	</select>
+	<select id="matching_DB_animals"
+		resultType="com.tech.miaa.abdmApi.AbdmPublicItem">
+		SELECT
+		DESERTIONNO,FILENAME,HAPPENDT,HAPPENPLACE,KINDCD,COLORCD,AGE,WEIGHT,NOTICENO,NOTICESDT,
+		NOTICEEDT,POPFILE,PROCESSSTATE,SEXCD,NEUTERYN,SPECIALMARK,CARENM,CARETEL,CAREADDR,ORGNM,
+		CHARGENM,OFFICETEL,NOTICECOMMENT FROM (SELECT * FROM MATCHINGALARM WHERE TOTAL_ID = #{param1} AND ALARM_CHECK = 'Y') 
+		INNER JOIN 
+		TOTALANIMAL W ON PRIMEID = DESERTIONNO
+	</select>
+
+
+	<select id="get_user_alarm_list"
+		resultType="com.tech.miaa.dto.matchingAlarmDto">
+		SELECT * FROM MATCHINGALARM WHERE USER_ID = #{param1} AND ALARM_CHECK = 'Y'
+	</select>
+
+	<select id="get_item_data"
+		resultType="com.tech.miaa.dto.FounditemDto">
+		SELECT * FROM TOTALITEM WHERE ATCID = #{PARAM1}
+	</select>
+	<select id="get_animal_data"
+		resultType="com.tech.miaa.abdmApi.AbdmPublicItem">
+		SELECT * FROM TOTALANIMAL WHERE DESERTIONNO = #{PARAM1}
+	</select>
+</mapper>

@@ -1,0 +1,126 @@
+--member
+create table member(
+user_id varchar2(20) PRIMARY KEY,user_shpwd varchar2(200),user_bcpwd varchar2(200),
+user_email varchar2(50), user_postcode number,
+user_address varchar2(100), user_detailAddress varchar2(100),
+user_grade varchar2(30), user_tel varchar2(30), user_join_date TIMESTAMP, user_last_login TIMESTAMP);
+select * from member;
+--admin
+create table miaa_admin(
+user_id varchar2(20),user_shpwd varchar2(200),user_bcpwd varchar2(200),
+user_email varchar2(50), user_join_date TIMESTAMP, user_last_login TIMESTAMP
+);
+----
+
+--관리자 1대1 문의 게시판
+CREATE TABLE admin_inquiry_board(
+board_num number primary key,
+board_reply_date timestamp,
+board_reply   varchar2(900),
+admin_id varchar2(40),
+CONSTRAINT inquiry_admin_user_fk foreign key (board_num) REFERENCES user_inquiry_board(board_num) on delete CASCADE
+);
+
+--1대1 문의 게시판--
+create table user_inquiry_board(
+user_id varchar(20),
+board_num number primary key,
+board_title varchar(100),
+board_content varchar(100),
+board_registration_date timestamp,
+board_reply_status varchar(12) default '처리중',
+board_filesrc varchar(200),
+CONSTRAINT user_inquiry_board_fk FOREIGN KEY (user_id)
+        REFERENCES member (user_id)
+        ON DELETE CASCADE
+);
+
+------
+----게시물 전체글번호 테이블========= 추가됨 (user_id를 member에서 참조)
+create table tot_board(
+total_id number PRIMARY KEY,
+type varchar2(20),
+user_id varchar2(50),
+CONSTRAINT tot_board_fk FOREIGN KEY (user_id)
+        REFERENCES member (user_id)
+        ON DELETE CASCADE
+);
+
+----애니멀 테이블==========제약조건 tot_board (total_id)참조로 변경
+create table animal(
+total_id number PRIMARY KEY, animal_id number,  user_tel varchar2(30), openclose varchar2(10), missingday varchar2(200), address varchar2(200),
+animal_name varchar2(50), upkind varchar2(20), upr_cd varchar2(20), sexcd varchar2(10), weight varchar2(10), age varchar2(20),  sepcialMark varchar2(500), 
+user_id varchar2(50), animal_date date, ADDRESSCODE1 varchar2(30), ADDRESSCODE2 varchar2(30)
+, CONSTRAINT animal_tot_fk FOREIGN KEY (total_id) REFERENCES tot_board (total_id) ON DELETE CASCADE);
+
+--애니멀 img테이블=============제약조건 tot_board (total_id)참조로 변경
+create table animal_img(total_id number, file_id number, user_id varchar2(20), fileName varchar2(500),
+CONSTRAINT animal_img_fk FOREIGN KEY (total_id)
+    REFERENCES tot_board (total_id)
+    ON DELETE CASCADE
+    );
+
+----아이템 테이블==========제약조건 tot_board (total_id)참조로 변경
+create table item(
+total_id number PRIMARY KEY, item_id number, user_tel varchar2(30), openclose varchar2(10), lostday varchar2(200), address varchar2(200),
+item_name varchar2(50), upkind varchar2(20), upr_cd varchar2(20), colorCd varchar2(10), sepcialMark varchar2(500), user_id varchar2(50), item_date date, ADDRESSCODE varchar2(30)
+,CONSTRAINT item_tot_fk FOREIGN KEY (total_id) REFERENCES tot_board (total_id) ON DELETE CASCADE);
+--아이템 img테이블==========제약조건 tot_board (total_id)참조로 변경
+create table item_img(total_id number, file_id number, user_id varchar2(20), fileName varchar2(500)
+,CONSTRAINT item_img_fk FOREIGN KEY (total_id)
+    REFERENCES tot_board (total_id)
+    ON DELETE CASCADE);
+-----
+
+--totalitem(api item데이터테이블)
+create table totalitem(
+atcid varchar2(250) primary key, --관리ID
+clrNm varchar2(50), -- 색깔
+depPlace varchar2(50), --보관장소
+fdFilePathImg varchar2(250), --습득물이미지명(주소)
+fdPrdtNm varchar2(250), --물품명
+fdSbjt varchar2(250), --게시글제목
+fdSn varchar2(250), --습득순번
+fdYmd varchar2(250), --습득일자
+prdtClNm varchar2(250), --물품분류명
+rnum varchar2(50), --검색결과 글번호(검색 후 결과값 페이지이동시에도 보존)
+addr varchar2(1000)
+);
+
+--totalanimal(api animal데이터테이블)
+create table totalanimal(
+desertionNo varchar2(80) primary key, filename varchar2(300), happenDt varchar2(100),
+happenPlace varchar2(80), kindCd varchar2(80), colorCd varchar2(80), age varchar2(80), weight varchar2(80), 
+noticeNo varchar2(80), noticeSdt varchar2(80), noticeEdt varchar2(80),popfile varchar2(300), processState varchar2(80),
+sexCd varchar2(80), neuterYn varchar2(80), specialMark varchar2(3000), careNm varchar2(80), careTel varchar2(80),
+careAddr varchar2(200), orgNm varchar2(80), chargeNm varchar2(80), officetel varchar2(80), noticeComment varchar2(500)
+);
+--last_chk(api 최근 데이터번호 데이터테이블)
+create table last_chk(
+type varchar2(30) primary key ,primeID varchar(100), status varchar2(30)
+);
+
+------
+--matchingAlarm(등록글번호 별 api호출 번호 테이블)================제약조건 tot_board (total_id)참조로 변경
+create table matchingAlarm(
+total_id number,
+user_id varchar2(100),
+primeid varchar2(100),
+type varchar2(20),
+alarm_check varchar2(1) DEFAULT 'Y',
+CONSTRAINT alarm_tot_fk FOREIGN KEY (total_id)
+    REFERENCES tot_board (total_id)
+    ON DELETE CASCADE
+);
+
+-----시퀀스
+--회원 1대1문의 시퀀스
+create sequence board_num_seq;
+--게시판 전체번호 시퀀스
+create sequence total_seq;
+--아이템 게시판 번호 시퀀스
+create sequence item_seq;
+--동물 게시판 번호 시퀀스
+create sequence animal_seq;
+
+exp userid=hr/123456@xe file=c:\23backup\BTSprjtable.dump;

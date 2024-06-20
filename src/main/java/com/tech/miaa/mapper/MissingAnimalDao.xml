@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<!-- dao의 인터페이스 주소 -->
+<mapper namespace="com.tech.miaa.dao.MissingAnimalDao">
+<!-- 최신 db변경에 따른 삭제로직 수정 04-23 마한슬  -->
+	<insert id="animalWrite">
+	INSERT ALL
+	INTO TOT_BOARD(TOTAL_ID,TYPE,USER_ID) VALUES
+	(TOTAL_SEQ.NEXTVAL,'animal',#{param12})
+	INTO
+	ANIMAL(TOTAL_ID,ANIMAL_ID,USER_TEL,OPENCLOSE,MISSINGDAY,ADDRESS,ANIMAL_NAME,UPKIND,UPR_CD,SEXCD
+	,WEIGHT,AGE,SEPCIALMARK,USER_ID,ANIMAL_DATE
+	,ADDRESSCODE1
+	,ADDRESSCODE2) VALUES
+	(TOTAL_SEQ.CURRVAL, ANIMAL_SEQ.NEXTVAL,#{param1},#{param2},#{param3},
+	#{param4},#{param5},#{param6},#{param7},#{param8},#{param9},#{param10},#{param11},#{param12},
+	SYSDATE,#{param13},#{param14}) SELECT * FROM DUAL
+	</insert>
+	
+	<insert id="imgUpLoad"> 
+		INSERT INTO ANIMAL_IMG VALUES((SELECT TOTAL_ID FROM ANIMAL WHERE USER_ID=#{param1} AND ANIMAL_NAME=#{param3} AND UPKIND=#{param5}), 
+		#{param2},#{param1},#{param4}) 
+	</insert>
+	<select id="animalListView" resultType="com.tech.miaa.dto.AnimalDto">
+		SELECT * FROM (SELECT ROWNUM RM, IT.* FROM (SELECT * FROM  ANIMAL AN LEFT OUTER JOIN (SELECT TOTAL_ID,FILENAME FROM ANIMAL_IMG WHERE FILE_ID IN
+	(SELECT MIN(FILE_ID) FROM ANIMAL_IMG GROUP BY TOTAL_ID)) ANIMG ON AN.TOTAL_ID=ANIMG.TOTAL_ID ORDER BY ANIMAL_ID DESC) IT 
+	<trim prefix="WHERE (" suffix=")">
+			<trim prefixOverrides="AND">
+				<if test="searchday1 !=''">
+					<choose>
+						<when test="searchday2==''">
+							AND MISSINGDAY BETWEEN #{param1} AND SYSDATE
+						</when>
+						<when test="searchday2!=''">
+							AND MISSINGDAY BETWEEN #{param1} AND #{param2}
+						</when>
+					</choose>
+				</if>
+				<if test="addressCode1 != ''">
+					<choose>
+						<when test="addressCode2 == 'all'">
+							AND ADDRESSCODE1=#{param3}
+						</when>
+						<when test="addressCode2 != 'all'">
+							AND ADDRESSCODE2=#{param4}
+						</when>
+					</choose>
+				</if>
+				<if test="animalkind1 !=''">
+					<choose>
+					<when test="animalkind2 =='all'">
+						AND UPKIND=#{param5}
+					</when>
+					<when test="animalkind2 !='all'">
+						AND UPR_CD=#{param6}
+					</when>
+					</choose>
+				</if>
+			</trim></trim>		
+	
+	)WHERE RM BETWEEN #{param7} AND #{param8}
+	</select>
+	<select id="totalCount" resultType="Integer">
+	SELECT count(*) FROM ANIMAL
+	<trim prefix="WHERE (" suffix=")">
+			<trim prefixOverrides="AND">
+				<if test="searchday1 !=''">
+					<choose>
+						<when test="searchday2==''">
+							AND MISSINGDAY BETWEEN #{param1} AND SYSDATE
+						</when>
+						<when test="searchday2!=''">
+							AND MISSINGDAY BETWEEN #{param1} AND #{param2}
+						</when>
+					</choose>
+				</if>
+				<if test="addressCode1 != ''">
+					<choose>
+						<when test="addressCode2 == 'all'">
+							AND ADDRESSCODE1=#{param3}
+						</when>
+						<when test="addressCode2 != 'all'">
+							AND ADDRESSCODE2=#{param4}
+						</when>
+					</choose>
+				</if>
+				<if test="animalkind1 !=''">
+					<choose>
+					<when test="animalkind2 =='all'">
+						AND UPKIND=#{param5}
+					</when>
+					<when test="animalkind2 !='all'">
+						AND UPR_CD=#{param6}
+					</when>
+					</choose>
+				</if>
+			</trim></trim>		
+	</select>
+	<select id="missing_ani_detail_page" resultType="com.tech.miaa.dto.AnimalDto">
+		SELECT * FROM ANIMAL WHERE TOTAL_ID=#{param1}
+	</select>
+	<select id="missing_ani_detail_img" resultType="com.tech.miaa.dto.AnimalImgDto">
+		SELECT * FROM ANIMAL_IMG WHERE TOTAL_ID=#{param1}
+	</select>
+	<select id="get_missing_animals" resultType="com.tech.miaa.dto.AnimalDto">
+		SELECT * FROM ANIMAL WHERE USER_ID= #{PARAM1}
+	</select>
+	<!-- 최신 db변경에 따른 삭제로직 수정 04-23 마한슬  -->
+	<delete id="missing_ani_delete_content">
+		DELETE FROM TOT_BOARD WHERE TOTAL_ID=#{param1}
+	</delete>
+	<delete id="missing_ani_delete_img">
+		DELETE FROM ANIMAL_IMG WHERE TOTAL_ID=#{param1}
+	</delete>
+	<update id="missing_ani_modify">
+		UPDATE ANIMAL SET OPENCLOSE=#{param1},MISSINGDAY=#{param2},ADDRESS=#{param3},ANIMAL_NAME=#{param4},UPKIND=#{param5},
+	UPR_CD=#{param6},SEXCD=#{param7},WEIGHT=#{param8},ANIMAL_DATE=SYSDATE,AGE=#{param9},SEPCIALMARK=#{param10}, 
+	ADDRESSCODE1=#{param11},ADDRESSCODE2=#{param12} WHERE TOTAL_ID=#{param13}
+	</update>
+</mapper>

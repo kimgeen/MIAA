@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- dao의 인터페이스 주소 -->
+<mapper namespace="com.tech.miaa.dao.AdminMemberDao">
+	<insert id="admin_join">
+		INSERT INTO MIAA_ADMIN (USER_ID, USER_SHPWD,
+		USER_BCPWD, USER_EMAIL, USER_JOIN_DATE)
+		VALUES(#{param1},#{param2},#{param3},#{param4},SYSTIMESTAMP)
+	</insert>
+	<select id="admin_idcheck" resultType="Integer">
+		SELECT COUNT(*) FROM
+		MIAA_ADMIN WHERE USER_ID=#{param1}
+	</select>
+	<select id="admin_emailcheck" resultType="Integer">
+		SELECT COUNT(*) FROM
+		MIAA_ADMIN WHERE USER_EMAIL=#{param1}
+	</select>
+	<select id="admin_login1" resultType="Integer">
+		SELECT COUNT(*) FROM
+		MIAA_ADMIN WHERE USER_ID=#{param1} AND USER_BCPWD=#{param2}
+	</select>
+	<select id="admin_login2"
+		resultType="com.tech.miaa.dto.AdminMemberDto">
+		SELECT * FROM MIAA_ADMIN WHERE USER_ID=#{param1} AND
+		USER_BCPWD=#{param2}
+	</select>
+	<select id="getAdminMembers"
+		resultType="com.tech.miaa.dto.AdminMemberDto">
+		SELECT * FROM MIAA_ADMIN
+	</select>
+	<update id="login_date_update">
+		UPDATE MIAA_ADMIN SET USER_LAST_LOGIN=SYSTIMESTAMP
+		WHERE USER_ID=#{param1}
+	</update>
+
+	<resultMap id="JoinedMember"
+		type="com.tech.miaa.dto.AdminMemberDto">
+		<id property="user_id" column="A_USER_ID" />
+		<result property="user_email" column="A_USER_EMAIL" />
+		<association property="member"
+			javaType="com.tech.miaa.dto.MemberDto">
+			<id property="user_id" column="USER_ID" />
+			<result property="user_email" column="USER_EMAIL" />
+			<result property="user_postcode" column="USER_POSTCODE" />
+			<result property="user_address" column="USER_ADDRESS" />
+			<result property="user_grade" column="USER_GRADE" />
+			<result property="user_tel" column="USER_TEL" />
+			<result property="user_join_date" column="USER_JOIN_DATE" />
+			<result property="user_last_login" column="USER_LAST_LOGIN" />
+		</association>
+	</resultMap>
+
+	<sql id="login_date_select">
+		<trim prefix="AND (" suffix=")">
+			<choose>
+				<when test="START_YMD != '' and END_YMD != ''">
+					TO_CHAR(NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN),'YYYY-MM-DD')
+					BETWEEN
+					#{START_YMD} AND #{END_YMD}
+				</when>
+				<when test="START_YMD == '' and END_YMD != ''">
+					TO_CHAR(NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN),'YYYY-MM-DD')
+					&lt;=
+					#{END_YMD}
+				</when>
+				<when test="START_YMD != '' and END_YMD == ''">
+					TO_CHAR(NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN),'YYYY-MM-DD')
+					&gt;=
+					#{START_YMD}
+				</when>
+			</choose>
+		</trim>
+	</sql>
+
+	<sql id="join_date_select">
+		<trim prefix="AND (" suffix=")">
+			<choose>
+				<when test="JOIN_START_YMD != '' and JOIN_END_YMD != ''">
+					TO_CHAR(NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE),'YYYY-MM-DD')
+					BETWEEN
+					#{JOIN_START_YMD} AND #{JOIN_END_YMD}
+				</when>
+				<when test="JOIN_START_YMD == '' and JOIN_END_YMD != ''">
+					TO_CHAR(NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE),'YYYY-MM-DD')
+					&lt;=
+					#{JOIN_END_YMD}
+				</when>
+				<when test="JOIN_START_YMD != '' and JOIN_END_YMD == ''">
+					TO_CHAR(NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE),'YYYY-MM-DD')
+					&gt;=
+					#{JOIN_START_YMD}
+				</when>
+			</choose>
+		</trim>
+	</sql>
+
+	<sql id="grad_select">
+		<trim prefix="AND (" suffix=")">
+			<choose>
+				<when test="member_grade == 'actMember'">
+					NVL(USER_GRADE,'관리자') = '일반회원'
+				</when>
+				<when test="member_grade == 'amdin'">
+					NVL(USER_GRADE,'관리자') = '관리자'
+				</when>
+			</choose>
+		</trim>
+	</sql>
+
+	<sql id="search_select">
+		<trim prefix="AND (" suffix=")">
+			<choose>
+				<when test="search_type == 'id'">
+					NVL(M.USER_ID,A.USER_ID) LIKE '%'||#{search_content}||'%'
+				</when>
+			</choose>
+		</trim>
+	</sql>
+
+	<select id="getJoinedMembers" resultMap="JoinedMember"
+		parameterType="com.tech.miaa.dto.AdminMemberSearchDto">
+		WITH J AS (SELECT A.USER_ID AS A_USER_ID, A.USER_EMAIL AS A_USER_EMAIL,
+		M.USER_ID, M.USER_EMAIL, USER_POSTCODE, SUBSTR(USER_ADDRESS,1,INSTR(USER_ADDRESS,' ',1,2)-1) as USER_ADDRESS,
+		USER_DETAILADDRESS,
+		NVL(USER_GRADE,'관리자') USER_GRADE, USER_TEL,
+		TO_CHAR(NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE),'YYYY-MM-DD')
+		USER_JOIN_DATE,
+		TO_CHAR(NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN),'YYYY-MM-DD
+		HH24:MI:SS') USER_LAST_LOGIN
+		FROM MIAA_ADMIN A FULL OUTER JOIN MEMBER M ON A.USER_ID = M.USER_ID 
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="START_YMD != null or END_YMD != null">
+				<include refid="login_date_select" />
+			</if>
+			<if test="JOIN_START_YMD != null or JOIN_END_YMD != null">
+				<include refid="join_date_select" />
+			</if>
+			<if test="member_grade != null or member_grade != 'all' ">
+				<include refid="grad_select" />
+			</if>
+			<if
+				test="(search_type != null and search_content != null) or search_content != ''">
+				<include refid="search_select" />
+			</if>
+		</trim>
+<!-- 	<choose>
+		<when
+			test="(START_YMD != null or END_YMD != null) and (START_YMD != '' and END_YMD != '')">
+			ORDER BY NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN) DESC)
+		</when>
+		<otherwise>
+			ORDER BY NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE) DESC)
+		</otherwise>
+	</choose> -->
+	ORDER BY NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE) DESC)
+	SELECT * FROM(SELECT ROWNUM N,J.* FROM J)
+	WHERE N BETWEEN #{rowStart} AND #{rowEnd}
+	</select>
+	<select id="get_total" resultType="Integer"
+		parameterType="com.tech.miaa.dto.AdminMemberSearchDto">
+		WITH J AS (SELECT A.USER_ID AS A_USER_ID, A.USER_EMAIL AS A_USER_EMAIL,
+		M.USER_ID, M.USER_EMAIL, USER_POSTCODE, SUBSTR(USER_ADDRESS,1,INSTR(USER_ADDRESS,' ',1,2)-1) as USER_ADDRESS,
+		USER_DETAILADDRESS,
+		NVL(USER_GRADE,'관리자') USER_GRADE, USER_TEL,
+		TO_CHAR(NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE),'YYYY-MM-DD')
+		USER_JOIN_DATE,
+		TO_CHAR(NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN),'YYYY-MM-DD
+		HH24:MI:SS') USER_LAST_LOGIN
+		FROM MIAA_ADMIN A FULL OUTER JOIN MEMBER M ON A.USER_ID = M.USER_ID 
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="START_YMD != null or END_YMD != null">
+				<include refid="login_date_select" />
+			</if>
+			<if test="JOIN_START_YMD != null or JOIN_END_YMD != null">
+				<include refid="join_date_select" />
+			</if>		
+			<if test="member_grade != null or member_grade != 'all' ">
+				<include refid="grad_select" />
+			</if>
+			<if
+				test="(search_type != null and search_content != null) or search_content != ''">
+				<include refid="search_select" />
+			</if>
+		</trim>
+
+<!-- 	<choose>
+		<when test="(START_YMD != null or END_YMD != null) and (START_YMD != '' and END_YMD != '')">
+			ORDER BY NVL(M.USER_LAST_LOGIN,A.USER_LAST_LOGIN) DESC)
+		</when>
+		<otherwise>
+			ORDER BY NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE) DESC)
+		</otherwise>
+	</choose> -->
+	ORDER BY NVL(M.USER_JOIN_DATE,A.USER_JOIN_DATE) DESC)
+	SELECT COUNT(*)
+	FROM(SELECT ROWNUM N,J.* FROM J)
+	</select>
+	
+	<delete id="joined_member_delete_for_ajax" parameterType="java.util.List">
+		DELETE FROM MEMBER WHERE USER_ID IN
+		<foreach item="boardNum" collection="list" open="("
+			separator="," close=")">
+			#{boardNum}
+		</foreach>
+	</delete>
+	<delete id="joined_member_delete2_for_ajax" parameterType="java.util.List">
+		DELETE FROM MIAA_ADMIN WHERE USER_ID IN
+		<foreach item="boardNum" collection="list" open="("
+			separator="," close=")">
+			#{boardNum}
+		</foreach>
+	</delete>
+</mapper>

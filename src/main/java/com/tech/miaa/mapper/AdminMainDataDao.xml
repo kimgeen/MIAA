@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- dao의 인터페이스 주소 -->
+<mapper namespace="com.tech.miaa.dao.AdminMainDataDao">
+
+	<select id="get_count_anikind_by_date"
+		resultType="com.tech.miaa.dto.AdminDataDto1">
+		SELECT DECODE(UPKIND,'417000','강아지','422400','고양이','429900','기타') AS
+		UPKIND,COUNT(UPKIND) UPKIND_COUNT FROM ANIMAL WHERE
+		TO_CHAR(ANIMAL_DATE,'YY-MM-DD') = '24-04-22' GROUP BY UPKIND
+	</select>
+
+</mapper>
